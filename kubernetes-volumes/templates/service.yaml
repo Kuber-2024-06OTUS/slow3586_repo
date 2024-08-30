@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  namespace: my-namespace
+  labels:
+    name: my-service
+spec:
+  type: ClusterIP
+  selector:
+    name: my-deployment
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      name: web

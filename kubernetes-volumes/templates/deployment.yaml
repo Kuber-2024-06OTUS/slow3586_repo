@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-deployment
+  namespace: my-namespace
+spec:
+  replicas: 3
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      name: my-deployment
+  template:
+    metadata:
+      labels:
+        name: my-deployment
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: homework
+                    operator: In
+                    values:
+                      - "true"
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              preference:
+                matchExpressions:
+                  - key: homework
+                    operator: In
+                    values:
+                      - "true"
+      containers:
+        - name: nginx
+          image: nginx:1.14.2
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: my-volume
+              mountPath: /homework/
+            - name: my-config
+              mountPath: /etc/nginx/
+          lifecycle:
+            preStop:
+              exec:
+                command: [ 'rm', '/homework/index.html' ]
+          readinessProbe:
+            httpGet:
+              port: 8000
+            timeoutSeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              port: 8000
+            timeoutSeconds: 5
+            periodSeconds: 5
+      initContainers:
+        - name: init
+          image: busybox:1.28
+          command: [ 'touch', '/init/index.html' ]
+          volumeMounts:
+            - name: my-volume
+              mountPath: /init/
+      volumes:
+        - name: my-volume
+          persistentVolumeClaim:
+            claimName: my-persistentvolumeclaim
+        - name: my-config
+          configMap:
+            name: my-config
+            items:
+              - key: nginx.conf
+                path: "nginx.conf"
