@@ -1,0 +1,8 @@
+apiVersion: v2
+name: kubernetes-networks
+maintainers:
+  - name: slow3586
+description: kubernetes-networks
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
