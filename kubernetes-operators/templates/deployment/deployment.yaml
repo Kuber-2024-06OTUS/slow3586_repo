@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-deployment
+  namespace: my-namespace
+spec:
+  replicas: 3
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      name: my-deployment
+  template:
+    metadata:
+      labels:
+        name: my-deployment
+    spec:
+      serviceAccountName: my-serviceaccount-monitoring
+      automountServiceAccountToken: true
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: homework
+                    operator: In
+                    values:
+                      - "true"
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              preference:
+                matchExpressions:
+                  - key: homework
+                    operator: In
+                    values:
+                      - "true"
+      containers:
+        - name: nginx
+          image: {{.Values.deployment.image.name}}:{{.Values.deployment.image.version}}
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: my-volume
+              mountPath: /homework/
+            - name: my-config
+              mountPath: /etc/nginx/
+          lifecycle:
+            preStop:
+              exec:
+                command: [ 'rm', '/homework/index.html' ]
+          {{ if  .Values.deployment.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              port: 8000
+            timeoutSeconds: 5
+            periodSeconds: 5
+          {{ end }}
+          {{ if  .Values.deployment.readinessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              port: 8000
+            timeoutSeconds: 5
+            periodSeconds: 5
+          {{ end }}
+      initContainers:
+        - name: init
+          image: busybox:1.28
+          command: [ "/bin/sh", "-c" ]
+          args:
+            - >-
+              touch /init/index.html;
+              touch /init/metrics.html;
+              chmod -R 777 /init/;
+          volumeMounts:
+            - name: my-volume
+              mountPath: /init/
+        - name: metrics
+          image: curlimages/curl:8.9.1
+          command: [ "/bin/sh", "-c" ]
+          securityContext:
+            privileged: true
+          args:
+            - >-
+              touch /init/metrics.html;
+              export TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token);
+              curl -sSk -H "Authorization: Bearer $TOKEN" "https://$(KUBERNETES_SERVICE_HOST):$(KUBERNETES_PORT_443_TCP_PORT)/metrics" > /init/metrics.html;
+          volumeMounts:
+            - name: my-volume
+              mountPath: /init/
+      volumes:
+        - name: my-volume
+          persistentVolumeClaim:
+            claimName: my-persistentvolumeclaim
+        - name: my-config
+          configMap:
+            name: my-config
+            items:
+              - key: nginx.conf
+                path: "nginx.conf"

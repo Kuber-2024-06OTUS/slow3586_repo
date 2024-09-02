@@ -1,0 +1,10 @@
+host: homework.otus
+hostPath: /run/desktop/mnt/c/Temp/myVolume
+deployment:
+  image:
+    name: nginx
+    version: 1.14.2
+  readinessProbe:
+    enabled: true
+  livenessProbe:
+    enabled: true

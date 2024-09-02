@@ -1,0 +1,10 @@
+apiVersion: "otus.homework/v1"
+kind: MySql
+metadata:
+  name: my-mysql
+  namespace: my-namespace
+spec:
+  image: roflmaoinmysoul/mysql-operator:1.0.0
+  database: mysql
+  password: mysql
+  storage_size: 1G
