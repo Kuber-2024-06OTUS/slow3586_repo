@@ -1,0 +1,8 @@
+apiVersion: v2
+name: my-chart
+maintainers:
+  - name: slow3586
+description: my-chart
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
