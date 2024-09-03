@@ -1,0 +1,58 @@
+environments:
+  dev:
+    values:
+      - kafka:
+          image:
+            tag: latest
+          broker:
+            replicaCount: 1
+            persistence:
+              size: 100Mi
+          listeners:
+            client:
+              protocol: PLAINTEXT
+          sasl:
+            client:
+              password: password
+  prod:
+    values:
+      - kafka:
+          image:
+            tag: 3.5.2
+          broker:
+            replicaCount: 5
+            persistence:
+              size: 100Mi
+          listeners:
+            client:
+              protocol: SASL_PLAINTEXT
+          sasl:
+            client:
+              password: password
+
+---
+
+releases:
+  - name: my-chart
+    chart: ./
+    namespace: my-namespace
+
+  - name: kafka
+    namespace: my-namespace
+    chart: bitnami/kafka
+    version: 30.0.5
+    values:
+      - image:
+          tag: {{ .Values | get "kafka.image.tag"}}
+        broker:
+          replicaCount: {{ .Values | get "kafka.broker.replicaCount"}}
+        listeners:
+          client:
+            protocol: {{ .Values | get "kafka.listeners.client.protocol"}}
+        sasl:
+          client:
+            password: {{ .Values | get "kafka.sasl.client.password"}}
+
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
